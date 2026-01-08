@@ -42,7 +42,7 @@ describe('checkAlwaysRunPatterns', () => {
 
   it('should return matching pattern when file matches', () => {
     expect(checkAlwaysRunPatterns(['package.json'], defaultPatterns)).toBe('package.json');
-    expect(checkAlwaysRunPatterns(['pnpm-lock.yaml'], defaultPatterns)).toBe('*.lock');
+    expect(checkAlwaysRunPatterns(['yarn.lock'], defaultPatterns)).toBe('*.lock');
   });
 
   it('should return null when no files match', () => {

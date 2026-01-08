@@ -83,15 +83,33 @@ function checkAlwaysRunPatterns(changedFiles: string[], patterns: string[]): str
 }
 
 /**
- * Simple glob-like pattern matching
+ * Glob-like pattern matching for file paths
+ * Supports:
+ * - * matches any characters except /
+ * - ** matches any characters including / (globstar)
+ * - ** followed by / matches zero or more path segments
+ * - ? matches single character
+ * - Literal dots and other characters are escaped
  */
 function matchesPattern(file: string, pattern: string): boolean {
-  // Convert glob pattern to regex
-  const regexPattern = pattern
-    .replace(/\*\*/g, '{{GLOBSTAR}}')
-    .replace(/\*/g, '[^/]*')
-    .replace(/{{GLOBSTAR}}/g, '.*')
-    .replace(/\?/g, '.');
+  // First, replace glob patterns with unique placeholders
+  // Handle **/ (globstar followed by slash) - matches zero or more directories
+  let regexPattern = pattern
+    .replace(/\*\*\//g, '\u0000GLOBSTAR_SLASH\u0000')
+    .replace(/\*\*/g, '\u0000GLOBSTAR\u0000')
+    .replace(/\*/g, '\u0000STAR\u0000')
+    .replace(/\?/g, '\u0000QUESTION\u0000');
+
+  // Escape special regex characters
+  regexPattern = regexPattern.replace(/[.+^${}()|[\]\\]/g, '\\$&');
+
+  // Restore glob patterns as regex equivalents
+  // **/ should match "anything/" or nothing (optional path segments)
+  regexPattern = regexPattern
+    .replace(/\u0000GLOBSTAR_SLASH\u0000/g, '(?:.*/)?')
+    .replace(/\u0000GLOBSTAR\u0000/g, '.*')
+    .replace(/\u0000STAR\u0000/g, '[^/]*')
+    .replace(/\u0000QUESTION\u0000/g, '.');
 
   const regex = new RegExp(`^${regexPattern}$`);
   return regex.test(file);
