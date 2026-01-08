@@ -23,3 +23,22 @@ export {
   type GraphNode,
   type SerializableGraph,
 } from './graph.js';
+
+export {
+  loadGraphCache,
+  saveGraphCache,
+  clearCache,
+  isCacheStale,
+  cacheExists,
+  getCacheMetadata,
+  getCachePath,
+} from './cache.js';
+
+export {
+  readProjectFiles,
+  readFiles,
+  fileExists,
+  getSourceFiles,
+  getTestFiles,
+  type ReadFilesOptions,
+} from './fileReader.js';
