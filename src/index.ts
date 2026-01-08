@@ -1,6 +1,7 @@
 import * as core from '@actions/core';
 import { parseGitDiff } from './diff/parser.js';
 import { getChangedFiles } from './diff/git.js';
+import { findTestFiles, findSourceFiles, type TestFramework } from './detection/index.js';
 
 /**
  * SmartCI - LLM-powered CI test selection
@@ -16,10 +17,12 @@ async function run(): Promise<void> {
     const alwaysRunPatterns = core.getInput('always-run-patterns').split(',').map(p => p.trim());
     const confidenceThreshold = parseInt(core.getInput('confidence-threshold'), 10);
     const shadowMode = core.getInput('shadow-mode') === 'true';
+    const testFramework = core.getInput('test-framework') as TestFramework;
 
     core.debug(`Always run patterns: ${alwaysRunPatterns.join(', ')}`);
     core.debug(`Confidence threshold: ${confidenceThreshold}`);
     core.debug(`Shadow mode: ${shadowMode}`);
+    core.debug(`Test framework: ${testFramework}`);
 
     // Step 1: Get changed files from git diff
     const changedFiles = await getChangedFiles();
@@ -48,15 +51,34 @@ async function run(): Promise<void> {
     const diffDetails = await parseGitDiff(changedFiles);
     core.info(`Parsed diff details for ${diffDetails.length} files`);
 
-    // TODO: Step 4 - Build/load dependency graph
-    // TODO: Step 5 - Send to LLM for test selection
-    // TODO: Step 6 - Apply confidence threshold
+    // Step 4: Separate test files from source files
+    const changedTestFiles = findTestFiles(changedFiles, testFramework);
+    const changedSourceFiles = findSourceFiles(changedFiles, testFramework);
 
-    // For now, output changed files as a starting point
+    core.info(`Changed test files: ${changedTestFiles.length}`);
+    core.info(`Changed source files: ${changedSourceFiles.length}`);
+
+    for (const testFile of changedTestFiles) {
+      core.debug(`Test file: ${testFile.path} (${testFile.framework})`);
+      if (testFile.sourceFile) {
+        core.debug(`  -> Likely tests: ${testFile.sourceFile}`);
+      }
+    }
+
+    // TODO: Step 5 - Build/load dependency graph
+    // TODO: Step 6 - Send to LLM for test selection
+    // TODO: Step 7 - Apply confidence threshold
+
+    // For now, output changed test files as tests to run
+    // Changed test files should always run, plus tests related to changed source files
+    const testsToRun = changedTestFiles.map(t => t.path);
+
     core.setOutput('run-all', 'false');
-    core.setOutput('tests-to-run', changedFiles.join(' '));
+    core.setOutput('tests-to-run', testsToRun.join(' '));
     core.setOutput('tests-skipped', '0');
     core.setOutput('time-saved-estimate', '0');
+    core.setOutput('changed-source-files', changedSourceFiles.join(' '));
+    core.setOutput('changed-test-files', changedTestFiles.map(t => t.path).join(' '));
 
     core.info('SmartCI: Analysis complete');
   } catch (error) {
