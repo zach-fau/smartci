@@ -1,0 +1,46 @@
+name: 'SmartCI Test Selection'
+description: 'LLM-powered CI test selection - analyze git diffs to skip irrelevant tests'
+author: 'SmartCI'
+
+branding:
+  icon: 'zap'
+  color: 'blue'
+
+inputs:
+  github-token:
+    description: 'GitHub token for API access'
+    required: true
+    default: ${{ github.token }}
+  anthropic-api-key:
+    description: 'Anthropic API key for Claude'
+    required: true
+  test-framework:
+    description: 'Test framework (jest, pytest, go)'
+    required: false
+    default: 'jest'
+  always-run-patterns:
+    description: 'Patterns that always trigger full test suite (comma-separated)'
+    required: false
+    default: 'package.json,*.lock,*.config.*,.github/**'
+  confidence-threshold:
+    description: 'Confidence threshold (0-100). Below this, run all tests.'
+    required: false
+    default: '80'
+  shadow-mode:
+    description: 'Run all tests but report what would have been skipped'
+    required: false
+    default: 'false'
+
+outputs:
+  tests-to-run:
+    description: 'Space-separated list of test files to run'
+  tests-skipped:
+    description: 'Number of tests that were skipped'
+  time-saved-estimate:
+    description: 'Estimated time saved in seconds'
+  run-all:
+    description: 'Whether to run all tests (true/false)'
+
+runs:
+  using: 'node20'
+  main: 'dist/index.js'
